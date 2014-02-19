@@ -1,5 +1,9 @@
 package unit;
 
+import java.security.InvalidParameterException;
+import java.text.DecimalFormat;
+import java.util.StringTokenizer;
+
 /**
  * A SizeUnit represents a data size such as bytes. It contains methods to
  * convert between different SizeUnits.
@@ -61,6 +65,10 @@ public enum SizeUnit {
 	 * Size in Exabyte (binary). 1 EiB = 1024 PiB = 1048576 TiB = 1073741824 GiB
 	 */
 	EIB(1152921504606846976.0, "EiB");
+
+	private static final String STRING_FORMAT = "%s %s";
+	private static final DecimalFormat VALUE_FORMAT_LARGE = new DecimalFormat("0.##");
+	private static final DecimalFormat VALUE_FORMAT_SMALL = new DecimalFormat("0");
 
 	/**
 	 * Factor of this unit to bytes as base unit.
@@ -249,5 +257,158 @@ public enum SizeUnit {
 	 */
 	public double convert(final double b, final SizeUnit u) {
 		return b * (u.factorToByte / factorToByte);
+	}
+
+	/**
+	 * Formats the given value into a string in this value.
+	 * 
+	 * @param b
+	 *            byte value to format
+	 * @return formatted String representation of the given value
+	 */
+	public String format(final double b) {
+		return format(b, BYTE);
+	}
+
+	/**
+	 * Formats the given value into a string in this value.
+	 * 
+	 * @param b
+	 *            value to format
+	 * @param u
+	 *            SizeUnit for the value
+	 * @return formatted String representation of the given value
+	 */
+	public String format(final double b, final SizeUnit u) {
+		DecimalFormat decimalFormat = VALUE_FORMAT_LARGE;
+		if (this == BYTE) {
+			decimalFormat = VALUE_FORMAT_SMALL;
+		}
+		return String.format(STRING_FORMAT, decimalFormat.format(this.convert(b, u)), this.getSymbol());
+	}
+
+	/**
+	 * Retrieves the corresponding SizeUnit for the given unit symbol.
+	 * 
+	 * @param symbol
+	 *            unit symbol to search for
+	 * @return SizeUnit for the given unit symbol or null
+	 */
+	public static SizeUnit getBySymbol(final String symbol) {
+		String tmp = symbol.trim();
+		for (SizeUnit unit : SizeUnit.values()) {
+			if (unit.getSymbol().equals(tmp)) {
+				return unit;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Formats the given value in the best suitable SizeUnit. Only SI units are
+	 * used.
+	 * 
+	 * @param b
+	 *            value to format
+	 * @param u
+	 *            SizeUnit of the value
+	 * @return formatted String representation of the given value
+	 */
+	public static String formatValueSI(final double b, final SizeUnit u) {
+		return formatValueSI(u.toByte(b));
+	}
+
+	/**
+	 * Formats the given byte value in the best suitable SizeUnit. Only SI units
+	 * are used.
+	 * 
+	 * @param b
+	 *            byte value to format
+	 * @return formatted String representation of the given value
+	 */
+	public static String formatValueSI(final double b) {
+		if (b >= SizeUnit.EB.factorToByte) {
+			return SizeUnit.EB.format(b);
+		} else if (b >= SizeUnit.PB.factorToByte) {
+			return SizeUnit.PB.format(b);
+		} else if (b >= SizeUnit.TB.factorToByte) {
+			return SizeUnit.TB.format(b);
+		} else if (b >= SizeUnit.GB.factorToByte) {
+			return SizeUnit.GB.format(b);
+		} else if (b >= SizeUnit.MB.factorToByte) {
+			return SizeUnit.MB.format(b);
+		} else if (b >= SizeUnit.KB.factorToByte) {
+			return SizeUnit.KB.format(b);
+		} else {
+			return SizeUnit.BYTE.format(b);
+		}
+	}
+
+	/**
+	 * Formats the given value in the best suitable SizeUnit. Only binary units
+	 * are used.
+	 * 
+	 * @param b
+	 *            value to format
+	 * @param u
+	 *            SizeUnit of the value
+	 * @return formatted String representation of the given value
+	 */
+	public static String formatValueBinary(final double b, final SizeUnit u) {
+		return formatValueBinary(u.toByte(b));
+	}
+
+	/**
+	 * Formats the given byte value in the best suitable SizeUnit. Only binary
+	 * units are used.
+	 * 
+	 * @param b
+	 *            byte value to format
+	 * @return formatted String representation of the given value
+	 */
+	public static String formatValueBinary(final double b) {
+		if (b >= SizeUnit.EIB.factorToByte) {
+			return SizeUnit.EIB.format(b);
+		} else if (b >= SizeUnit.PIB.factorToByte) {
+			return SizeUnit.PIB.format(b);
+		} else if (b >= SizeUnit.TIB.factorToByte) {
+			return SizeUnit.TIB.format(b);
+		} else if (b >= SizeUnit.GIB.factorToByte) {
+			return SizeUnit.GIB.format(b);
+		} else if (b >= SizeUnit.MIB.factorToByte) {
+			return SizeUnit.MIB.format(b);
+		} else if (b >= SizeUnit.KIB.factorToByte) {
+			return SizeUnit.KIB.format(b);
+		} else {
+			return SizeUnit.BYTE.format(b);
+		}
+	}
+
+	/**
+	 * Parses the given input String to its byte value. Supports all size units
+	 * this class supports.
+	 * 
+	 * @param input
+	 *            String to parse
+	 * @return number of byte as represented by input
+	 * @throws InvalidParameterException
+	 *             if string doesn't contain two parts seperated by ' ' or '\t'.
+	 * @throws NumberFormatException
+	 *             if first part of the string isn't a valid number
+	 */
+	public static double parse(final String input) throws InvalidParameterException, NumberFormatException {
+		StringTokenizer tokenizer = new StringTokenizer(input.trim());
+		if (tokenizer.countTokens() != 2) {
+			throw new InvalidParameterException("input should only contain a number and a unit symbol");
+		}
+
+		double value = Double.parseDouble(tokenizer.nextToken());
+		SizeUnit unit = getBySymbol(tokenizer.nextToken());
+
+		if (unit == null) {
+			throw new NullPointerException("No size unit with the given symbol found");
+		}
+
+		return unit.toByte(value);
 	}
 }

@@ -3,9 +3,19 @@ package unit;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
+import java.text.DecimalFormatSymbols;
+
 import org.junit.Test;
 
+/**
+ * Test for SizeUnit.
+ * 
+ * @author Markus Wichmann
+ * 
+ */
 public class SizeUnitTest {
+
+	private static final char DOT = DecimalFormatSymbols.getInstance().getDecimalSeparator();
 
 	@Test
 	public void toByte() {
@@ -289,5 +299,100 @@ public class SizeUnitTest {
 		assertThat(SizeUnit.PIB.getSymbol(), is("PiB"));
 		assertThat(SizeUnit.EB.getSymbol(), is("EB"));
 		assertThat(SizeUnit.EIB.getSymbol(), is("EiB"));
+	}
+
+	@Test
+	public void format() {
+		assertThat(SizeUnit.BYTE.format(1.0, SizeUnit.GB), is("1000000000 byte"));
+		assertThat(SizeUnit.BYTE.format(1.0, SizeUnit.KIB), is("1024 byte"));
+
+		assertThat(SizeUnit.GB.format(1.0, SizeUnit.BYTE), is("0 GB"));
+		assertThat(SizeUnit.KIB.format(10, SizeUnit.BYTE), is("0" + DOT + "01 KiB"));
+	}
+
+	@Test
+	public void formatValueSI() {
+
+		// TODO 999999 => 1000 kB (rounding error) correct?
+
+		assertThat(SizeUnit.formatValueSI(1.0), is("1 byte"));
+		assertThat(SizeUnit.formatValueSI(1000.0), is("1 kB"));
+		assertThat(SizeUnit.formatValueSI(1000000.0), is("1 MB"));
+		assertThat(SizeUnit.formatValueSI(1000000000.0), is("1 GB"));
+		assertThat(SizeUnit.formatValueSI(1000000000000.0), is("1 TB"));
+		assertThat(SizeUnit.formatValueSI(1000000000000000.0), is("1 PB"));
+		assertThat(SizeUnit.formatValueSI(1000000000000000000.0), is("1 EB"));
+
+		assertThat(SizeUnit.formatValueSI(1.1), is("1 byte"));
+		assertThat(SizeUnit.formatValueSI(1100.0), is("1" + DOT + "1 kB"));
+		assertThat(SizeUnit.formatValueSI(1100000.0), is("1" + DOT + "1 MB"));
+		assertThat(SizeUnit.formatValueSI(1100000000.0), is("1" + DOT + "1 GB"));
+		assertThat(SizeUnit.formatValueSI(1100000000000.0), is("1" + DOT + "1 TB"));
+		assertThat(SizeUnit.formatValueSI(1100000000000000.0), is("1" + DOT + "1 PB"));
+		assertThat(SizeUnit.formatValueSI(1100000000000000000.0), is("1" + DOT + "1 EB"));
+
+		assertThat(SizeUnit.formatValueSI(1.111), is("1 byte"));
+		assertThat(SizeUnit.formatValueSI(1111.0), is("1" + DOT + "11 kB"));
+		assertThat(SizeUnit.formatValueSI(1111000.0), is("1" + DOT + "11 MB"));
+		assertThat(SizeUnit.formatValueSI(1111000000.0), is("1" + DOT + "11 GB"));
+		assertThat(SizeUnit.formatValueSI(1111000000000.0), is("1" + DOT + "11 TB"));
+		assertThat(SizeUnit.formatValueSI(1111000000000000.0), is("1" + DOT + "11 PB"));
+		assertThat(SizeUnit.formatValueSI(1111000000000000000.0), is("1" + DOT + "11 EB"));
+
+		assertThat(SizeUnit.formatValueSI(1234567.0, SizeUnit.MB), is("1" + DOT + "23 TB"));
+	}
+
+	@Test
+	public void formatValueBinary() {
+
+		// TODO 1048575 => 1000 KiB (rounding error) correct?
+
+		assertThat(SizeUnit.formatValueBinary(1.0), is("1 byte"));
+		assertThat(SizeUnit.formatValueBinary(1024.0), is("1 KiB"));
+		assertThat(SizeUnit.formatValueBinary(1048576.0), is("1 MiB"));
+		assertThat(SizeUnit.formatValueBinary(1073741824.0), is("1 GiB"));
+		assertThat(SizeUnit.formatValueBinary(1099511627776.0), is("1 TiB"));
+		assertThat(SizeUnit.formatValueBinary(1125899906842624.0), is("1 PiB"));
+		assertThat(SizeUnit.formatValueBinary(1152921504606846976.0), is("1 EiB"));
+
+		assertThat(SizeUnit.formatValueBinary(1.0 * 1.1), is("1 byte"));
+		assertThat(SizeUnit.formatValueBinary(1024.0 * 1.1), is("1" + DOT + "1 KiB"));
+		assertThat(SizeUnit.formatValueBinary(1048576.0 * 1.1), is("1" + DOT + "1 MiB"));
+		assertThat(SizeUnit.formatValueBinary(1073741824.0 * 1.1), is("1" + DOT + "1 GiB"));
+		assertThat(SizeUnit.formatValueBinary(1099511627776.0 * 1.1), is("1" + DOT + "1 TiB"));
+		assertThat(SizeUnit.formatValueBinary(1125899906842624.0 * 1.1), is("1" + DOT + "1 PiB"));
+		assertThat(SizeUnit.formatValueBinary(1152921504606846976.0 * 1.1), is("1" + DOT + "1 EiB"));
+
+		assertThat(SizeUnit.formatValueBinary(1.0 * 1.111), is("1 byte"));
+		assertThat(SizeUnit.formatValueBinary(1024.0 * 1.111), is("1" + DOT + "11 KiB"));
+		assertThat(SizeUnit.formatValueBinary(1048576.0 * 1.111), is("1" + DOT + "11 MiB"));
+		assertThat(SizeUnit.formatValueBinary(1073741824.0 * 1.111), is("1" + DOT + "11 GiB"));
+		assertThat(SizeUnit.formatValueBinary(1099511627776.0 * 1.111), is("1" + DOT + "11 TiB"));
+		assertThat(SizeUnit.formatValueBinary(1125899906842624.0 * 1.111), is("1" + DOT + "11 PiB"));
+		assertThat(SizeUnit.formatValueBinary(1152921504606846976.0 * 1.111), is("1" + DOT + "11 EiB"));
+
+		assertThat(SizeUnit.formatValueBinary(1234567.0, SizeUnit.MIB), is("1" + DOT + "18 TiB"));
+	}
+
+	@Test
+	public void parse() {
+		assertThat(SizeUnit.parse("1 byte"), is(1.0));
+		assertThat(SizeUnit.parse("1.8 byte"), is(1.8));
+		assertThat(SizeUnit.parse("100000 byte"), is(100000.0));
+		assertThat(SizeUnit.parse("10000000000 byte"), is(10000000000.0));
+
+		assertThat(SizeUnit.parse("1234.5678 kB"), is(1234567.8));
+		assertThat(SizeUnit.parse("1234.5678 MB"), is(1234567800.0));
+		assertThat(SizeUnit.parse("1234.5678 GB"), is(1234567800000.0));
+		assertThat(SizeUnit.parse("1234.5678 TB"), is(1234567800000000.0));
+		assertThat(SizeUnit.parse("1234.5678 PB"), is(1234567800000000000.0));
+		assertThat(SizeUnit.parse("1234.5678 EB"), is(1234567800000000000000.0));
+
+		assertThat(SizeUnit.parse("1234.5678 KiB"), is(1264197.4272));
+		assertThat(SizeUnit.parse("1234.5678 MiB"), is(1294538165.4528));
+		assertThat(SizeUnit.parse("1234.5678 GiB"), is(1325607081423.6672));
+		assertThat(SizeUnit.parse("1234.5678 TiB"), is(1357421651377835.2128));
+		assertThat(SizeUnit.parse("1234.5678 PiB"), is(1389999771010903257.9072));
+		assertThat(SizeUnit.parse("1234.5678 EiB"), is(1423359765515164936096.9728));
 	}
 }
